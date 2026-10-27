@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Happy 19th Birthday, Dilsha ♡</title>
+  <title>Happy 19th Birthday, Wifeeeyy ♡</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -111,13 +111,54 @@
   <canvas id="petalCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
 
   <!-- Background Music Audio Element (Default ON) -->
-  <audio id="bgMusic" src="music/videoplayback_3m4ZmiOh.mp3" loop preload="auto"></audio>
+  <audio id="bgMusic" src="music/music%20main.mp3" loop preload="auto"></audio>
 
   <!-- Sound & Music Toggle Floating Button (Default ON) -->
   <button id="soundToggle" class="fixed top-4 right-4 z-50 bg-pink-100 text-pink-700 ring-2 ring-pink-300/60 px-3.5 py-2 rounded-full shadow-lg border border-pink-200 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 backdrop-blur-md">
     <span id="soundIcon" class="animate-pulse">💖</span>
     <span id="soundText">Music: ON</span>
   </button>
+
+  <!-- Romantic Preloader & Audio Buffering Screen -->
+  <div id="loadingScreen" class="fixed inset-0 z-[100] bg-[#140207] flex flex-col items-center justify-center p-6 text-center select-none transition-opacity duration-700">
+    <div class="relative w-28 h-28 mb-5 flex items-center justify-center">
+      <!-- Glowing spinning halo -->
+      <div class="absolute inset-0 rounded-full border border-pink-500/20 animate-ping" style="animation-duration: 3s;"></div>
+      <div class="absolute inset-1 rounded-full border border-rose-400/30 animate-spin" style="animation-duration: 9s;"></div>
+      <div class="absolute inset-0 bg-rose-600/25 rounded-full blur-2xl"></div>
+
+      <!-- Center Pulsing Heart Box -->
+      <div class="relative z-10 w-16 h-16 rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-500 flex items-center justify-center shadow-xl shadow-rose-950/60 rotate-3 animate-pulse">
+        <span class="text-3xl filter drop-shadow">💖</span>
+      </div>
+    </div>
+
+    <!-- Romantic Heading -->
+    <h2 class="font-cursive text-3xl sm:text-4xl text-amber-200 mb-1.5">Unwrapping Dilsha's Surprise...</h2>
+    <p id="loadingSubtext" class="text-xs sm:text-sm text-pink-200/80 font-hand tracking-wider mb-6">
+      Tuning our special soundtrack... 🎵
+    </p>
+
+    <!-- Progress Bar -->
+    <div class="w-64 max-w-xs h-2.5 bg-white/10 rounded-full overflow-hidden border border-white/10 shadow-inner relative mb-2 p-0.5">
+      <div id="loadingBar" class="h-full bg-gradient-to-r from-rose-500 via-pink-400 to-amber-300 rounded-full transition-all duration-300 shadow-sm" style="width: 15%;"></div>
+    </div>
+
+    <!-- Progress Percentage Text -->
+    <div class="flex items-center justify-between w-64 text-[11px] font-mono text-pink-300/70">
+      <span id="loadingPercentText">Buffering audio...</span>
+      <span id="loadingPercent">15%</span>
+    </div>
+
+    <!-- Tap to Enter Button (Revealed once loaded) -->
+    <div id="readyPrompt" class="hidden mt-6 transition-all duration-500 transform translate-y-3 opacity-0">
+      <button id="btnEnterSurprise" class="py-3.5 px-8 rounded-full bg-gradient-to-r from-rose-500 via-pink-600 to-amber-500 text-white font-bold text-sm shadow-xl shadow-rose-600/40 hover:brightness-110 active:scale-95 transition flex items-center gap-2 mx-auto animate-bounce">
+        <span>Enter Dilsha's Surprise ♡</span>
+        <span>✨</span>
+      </button>
+      <p class="text-[11px] text-pink-200/60 mt-2 font-hand">Tap anywhere to begin with music 🎵</p>
+    </div>
+  </div>
 
   <!-- Mobile Frame Container (Mobile-first, fits iPhone/Android seamlessly) -->
   <main class="relative w-full max-w-[430px] h-[100dvh] sm:h-[880px] sm:max-h-[92vh] bg-white sm:rounded-[36px] shadow-2xl overflow-hidden flex flex-col z-10 border sm:border-pink-950/20">
@@ -768,18 +809,132 @@
         updateMusicUI(false);
       }
 
-      // Default ON: Start music immediately when the website is turned on
-      playMusic();
+      // ================= PRELOADER & AUDIO BUFFERING LOGIC =================
+      const loadingScreen = document.getElementById('loadingScreen');
+      const loadingBar = document.getElementById('loadingBar');
+      const loadingPercent = document.getElementById('loadingPercent');
+      const loadingPercentText = document.getElementById('loadingPercentText');
+      const loadingSubtext = document.getElementById('loadingSubtext');
+      const readyPrompt = document.getElementById('readyPrompt');
+      const btnEnterSurprise = document.getElementById('btnEnterSurprise');
 
-      // In case browser policy temporarily holds unmuted audio until user gesture:
-      const startMusicOnFirstGesture = () => {
-        if (bgMusic && bgMusic.paused) {
-          playMusic();
+      let currentProgress = 15;
+      let isAudioBuffered = false;
+      let hasEntered = false;
+
+      // Force browser to start downloading and buffering the audio file
+      if (bgMusic) {
+        bgMusic.load();
+
+        bgMusic.addEventListener('canplaythrough', () => {
+          isAudioBuffered = true;
+        });
+
+        bgMusic.addEventListener('progress', () => {
+          if (bgMusic.buffered.length > 0 && bgMusic.duration > 0) {
+            const bufferedEnd = bgMusic.buffered.end(bgMusic.buffered.length - 1);
+            if (bufferedEnd > 3 || bufferedEnd >= bgMusic.duration * 0.1) {
+              isAudioBuffered = true;
+            }
+          }
+        });
+      }
+
+      const romanticStages = [
+        { at: 25, sub: "Tuning our special soundtrack... 🎵", label: "Downloading audio..." },
+        { at: 55, sub: "Gathering our sweetest memories... ✨", label: "Buffering music stream..." },
+        { at: 80, sub: "Almost ready for you, Dilsha... ♡", label: "Preparing romantic petals..." },
+        { at: 100, sub: "Everything is ready for my Queen! 💕", label: "Ready!" }
+      ];
+
+      function updateLoaderUI(p) {
+        if (!loadingBar) return;
+        loadingBar.style.width = `${p}%`;
+        loadingPercent.textContent = `${p}%`;
+        for (let i = romanticStages.length - 1; i >= 0; i--) {
+          if (p >= romanticStages[i].at) {
+            loadingSubtext.textContent = romanticStages[i].sub;
+            loadingPercentText.textContent = romanticStages[i].label;
+            break;
+          }
         }
-      };
-      ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
-        window.addEventListener(evt, startMusicOnFirstGesture, { once: true, passive: true });
-      });
+      }
+
+      function enterSurprise() {
+        if (hasEntered || !loadingScreen) return;
+        hasEntered = true;
+        playMusic();
+        loadingScreen.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => {
+          loadingScreen.remove();
+        }, 750);
+      }
+
+      function onLoadingComplete() {
+        if (readyPrompt) {
+          readyPrompt.classList.remove('hidden');
+          setTimeout(() => {
+            readyPrompt.classList.remove('opacity-0', 'translate-y-3');
+          }, 40);
+        }
+
+        // Try direct playback if browser allows autoplay
+        if (bgMusic) {
+          const testPromise = bgMusic.play();
+          if (testPromise !== undefined) {
+            testPromise.then(() => {
+              isMusicPlaying = true;
+              updateMusicUI(true);
+              // Autoplay permitted: auto enter after brief moment
+              setTimeout(enterSurprise, 500);
+            }).catch(() => {
+              // Browser policy requires tap: button is ready
+              console.log("Audio buffered. Waiting for user tap to begin.");
+            });
+          }
+        }
+      }
+
+      // Smooth progress ticker providing sufficient download time for the audio stream
+      const progressTimer = setInterval(() => {
+        if (hasEntered) {
+          clearInterval(progressTimer);
+          return;
+        }
+
+        if (currentProgress < 75) {
+          currentProgress += Math.floor(Math.random() * 6) + 3;
+        } else if (isAudioBuffered || currentProgress >= 92) {
+          currentProgress += 6;
+        } else {
+          // Waiting for audio buffer: advance slower to give time to download
+          currentProgress += 1;
+        }
+
+        if (currentProgress >= 100) {
+          currentProgress = 100;
+          updateLoaderUI(100);
+          clearInterval(progressTimer);
+          onLoadingComplete();
+        } else {
+          updateLoaderUI(currentProgress);
+        }
+      }, 140);
+
+      if (btnEnterSurprise) {
+        btnEnterSurprise.addEventListener('click', (e) => {
+          e.stopPropagation();
+          enterSurprise();
+        });
+      }
+
+      if (loadingScreen) {
+        loadingScreen.addEventListener('click', () => {
+          if (currentProgress >= 90) {
+            enterSurprise();
+          }
+        });
+      }
 
       soundToggle.addEventListener('click', (e) => {
         e.stopPropagation();
