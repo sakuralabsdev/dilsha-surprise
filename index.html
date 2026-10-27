@@ -110,10 +110,13 @@
   <!-- Floating Rose Petals / Hearts Canvas -->
   <canvas id="petalCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
 
-  <!-- Sound & Music Toggle Floating Button -->
-  <button id="soundToggle" class="fixed top-4 right-4 z-50 bg-white/80 backdrop-blur-md text-pink-600 hover:text-pink-700 px-3.5 py-2 rounded-full shadow-lg border border-pink-200 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95">
-    <span id="soundIcon">🎵</span>
-    <span id="soundText">Music: OFF</span>
+  <!-- Background Music Audio Element (Default ON) -->
+  <audio id="bgMusic" src="music/videoplayback_3m4ZmiOh.mp3" loop preload="auto"></audio>
+
+  <!-- Sound & Music Toggle Floating Button (Default ON) -->
+  <button id="soundToggle" class="fixed top-4 right-4 z-50 bg-pink-100 text-pink-700 ring-2 ring-pink-300/60 px-3.5 py-2 rounded-full shadow-lg border border-pink-200 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 backdrop-blur-md">
+    <span id="soundIcon" class="animate-pulse">💖</span>
+    <span id="soundText">Music: ON</span>
   </button>
 
   <!-- Mobile Frame Container (Mobile-first, fits iPhone/Android seamlessly) -->
@@ -240,11 +243,11 @@
           </div>
 
           <!-- Hint trigger -->
-          <button id="btnPinHint" class="text-[11px] text-amber-300/90 underline mt-1 hover:text-amber-200">
+          <button id="btnPinHint" class="text-[11px] text-amber-300/90 underline mt-1 hover:text-amber-200 transition">
             Need a hint? 💡
           </button>
-          <div id="pinHintText" class="hidden text-[11px] text-pink-200 bg-white/10 px-3 py-1 rounded-full mt-1.5 backdrop-blur-sm">
-            Hint: A very special date: <span class="text-amber-300 font-bold">1207</span> 💖
+          <div id="pinHintText" class="hidden text-[11px] text-pink-100 bg-white/15 px-3.5 py-1.5 rounded-full mt-1.5 backdrop-blur-sm border border-pink-300/20 shadow-sm text-center">
+            Hint: Our Nikkah date <span class="inline-block px-1.5 py-0.5 ml-1 bg-amber-400/20 text-amber-300 font-mono text-[10px] rounded border border-amber-300/40 font-semibold tracking-wider">DD/MM</span> 💍
           </div>
         </div>
 
@@ -671,10 +674,10 @@
       const pages = Array.from({ length: totalPages }, (_, i) => document.getElementById(`page-${i + 1}`));
       const btnDirectNext = document.getElementById('btnDirectNext');
 
-      // Audio Engine (Web Audio API synthesizes romantic tones without external files)
+      // Audio Engine (Plays videoplayback_3m4ZmiOh.mp3 by default, with sound effects)
       let audioCtx = null;
+      const bgMusic = document.getElementById('bgMusic');
       let isMusicPlaying = false;
-      let musicInterval = null;
       const soundToggle = document.getElementById('soundToggle');
       const soundIcon = document.getElementById('soundIcon');
       const soundText = document.getElementById('soundText');
@@ -728,52 +731,63 @@
         playTone(220, 0.25, 'sawtooth', 0.1);
       }
 
-      // Gentle romantic arpeggios
-      const chordNotes = [
-        [261.63, 329.63, 392.00, 523.25], // C maj
-        [220.00, 261.63, 329.63, 440.00], // A min
-        [174.61, 220.00, 261.63, 349.23], // F maj
-        [196.00, 246.94, 293.66, 392.00]  // G maj
-      ];
-      let chordIndex = 0;
-      let noteStep = 0;
-
-      function startBackgroundMusic() {
-        if (!audioCtx) initAudio();
-        isMusicPlaying = true;
-        soundIcon.textContent = '💖';
-        soundText.textContent = 'Music: ON';
-        soundToggle.classList.add('bg-pink-100', 'text-pink-700');
-
-        musicInterval = setInterval(() => {
-          if (!isMusicPlaying || !audioCtx) return;
-          const currentChord = chordNotes[chordIndex];
-          const note = currentChord[noteStep % currentChord.length];
-          playTone(note, 0.6, 'sine', 0.08);
-          noteStep++;
-          if (noteStep % 4 === 0) {
-            chordIndex = (chordIndex + 1) % chordNotes.length;
-          }
-        }, 500);
-      }
-
-      function stopBackgroundMusic() {
-        isMusicPlaying = false;
-        soundIcon.textContent = '🎵';
-        soundText.textContent = 'Music: OFF';
-        soundToggle.classList.remove('bg-pink-100', 'text-pink-700');
-        if (musicInterval) {
-          clearInterval(musicInterval);
-          musicInterval = null;
+      function updateMusicUI(playing) {
+        if (playing) {
+          soundIcon.textContent = '💖';
+          soundIcon.classList.add('animate-pulse');
+          soundText.textContent = 'Music: ON';
+          soundToggle.className = "fixed top-4 right-4 z-50 bg-pink-100 text-pink-700 ring-2 ring-pink-300/60 px-3.5 py-2 rounded-full shadow-lg border border-pink-200 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 backdrop-blur-md";
+        } else {
+          soundIcon.textContent = '🎵';
+          soundIcon.classList.remove('animate-pulse');
+          soundText.textContent = 'Music: OFF';
+          soundToggle.className = "fixed top-4 right-4 z-50 bg-white/80 backdrop-blur-md text-pink-600 hover:text-pink-700 px-3.5 py-2 rounded-full shadow-lg border border-pink-200 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95";
         }
       }
 
-      soundToggle.addEventListener('click', () => {
+      function playMusic() {
+        if (!bgMusic) return;
+        initAudio();
+        const playPromise = bgMusic.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            isMusicPlaying = true;
+            updateMusicUI(true);
+          }).catch(err => {
+            // Browser autoplay policy might wait for user interaction
+            isMusicPlaying = false;
+            updateMusicUI(true); // Maintain default UI as ON
+          });
+        }
+      }
+
+      function pauseMusic() {
+        if (!bgMusic) return;
+        bgMusic.pause();
+        isMusicPlaying = false;
+        updateMusicUI(false);
+      }
+
+      // Default ON: Start music immediately when the website is turned on
+      playMusic();
+
+      // In case browser policy temporarily holds unmuted audio until user gesture:
+      const startMusicOnFirstGesture = () => {
+        if (bgMusic && bgMusic.paused) {
+          playMusic();
+        }
+      };
+      ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
+        window.addEventListener(evt, startMusicOnFirstGesture, { once: true, passive: true });
+      });
+
+      soundToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
         initAudio();
         if (isMusicPlaying) {
-          stopBackgroundMusic();
+          pauseMusic();
         } else {
-          startBackgroundMusic();
+          playMusic();
         }
       });
 
